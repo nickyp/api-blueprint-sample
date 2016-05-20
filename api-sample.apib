@@ -1,0 +1,278 @@
+FORMAT: 1ALPHA
+HOST: https://www.yourapi.com/api
+
+# BEST API Documentation
+
+::: note
+Version: 1ALPHA (subject to change)
+:::
+
+Welcome to the documentation for the BEST API EVER.
+
+Here you can find out how to create an account for a user, authenticate them.
+
+::: note
+## API Authentication
+All API calls will be performed over SSL/TLS and authentication to the BEST API is done by using **Basic Authentication** using your `client_id` as *username* and `client_secret` as *password* **on each request**.
+
+Given these sample credentials:
+* `client_id` => `bfvjrkr3sxy7ik24g83ry4icu`
+* `client_secret` => `uci4syerc3r8egt42ktir7uysxtsn3oroknrejvfb`:
+
+**Example (curl)**
+
+    curl --user bfvjrkr3sxy7ik24g83ry4icu:uci4syerc3r8egt42ktir7uysxtsn3oroknrejvfb https://www.yourapi.com/api/noop
+
+:::
+
+# Data Structures
+
+## InvitationData
++ email_address: mr.foo@bar.com (required)
++ title: Mr. (required)
++ first_name: Foo (required)
++ last_name: Bar (required)
++ account_data
+    + date_of_birth: `01-01-1970`
+    + home_street_address: 1000 Sutter
+    + home_city: San Francisco
+    + home_state: California
+    + home_zip_code: 94101 (number)
+    + home_phone_number: `+1-123-456-800`
+
+## ClientCredentialsErrorResponse
++ error: Unauthorized: unknown client_id or incorrect client_secret
+
+## InvalidEmailErrorResponse
++ error: Invalid email address
+
+## ResourceNotFoundErrorResponse
++ error: Resource not found
+
+## AccountResponse
++ uuid: `7d092960-f776-0130-6960-28206654eb77`
++ authentications_uri: `https://wwww.yourapi.com/api/accounts/7d092960-f776-0130-6960-28206654eb77/authentications`
++ status: ready
+
+## AccountGoneResponse
++ status: terminated
+
+# Group Accounts
+
+## Accounts [/accounts]
+
+## Create an account [POST]
+Create an account for a user.
+
+In order to make the process as convenient as possible you can include personal information about the user. In this way the user does not have to enter all the information manually.
+
+This is done via the **optional** `account_data` field in the body payload.
+
+* The response body will contain a **UUID** *uniquely* identifying the account.
+* The `Location` response header will contain a FQDN **URI** also *uniquely* identifying the account.
+
+::: note
+You can view example requests and responses by clicking **show** below.
+:::
+
++ Request with body (application/json)
+
+    + Attributes (InvitationData)
+
++ Response 201 (application/json)
+
+    + Headers
+
+            Location: https://www.yourapi.com/api/accounts/7d092960-f776-0130-6960-28206654eb77
+
+    + Body
+
+            {
+              "uuid": "7d092960-f776-0130-6960-28206654eb77"
+            }
+
++ Response 401 (application/json)
+
+    + Attributes (ClientCredentialsErrorResponse)
+
++ Response 404 (application/json)
+
+    + Attributes (ResourceNotFoundErrorResponse)
+
++ Response 422 (application/json)
+
+    + Attributes (InvalidEmailErrorResponse)
+
+## All accounts [GET /accounts{?only_count=true}]
+List all accounts
+
++ Parameters
+    + only_count: `false` (optional, string) - Only include the count in the response to reduce output. Values: `true`, `false`. Default: `false`.
+
++ Response 200 (application/json)
+
+    + Body
+
+            {
+              "count": 2,
+              "uris": [
+              "https://www.yourapi.com/api/accounts/7d092960-f776-0130-6960-28206654eb77",
+              "https://www.yourapi.com/api/accounts/1f162999-1338-0123-6087-16114552cf21"
+              ]
+            }
+
++ Response 401 (application/json)
+
+    + Attributes (ClientCredentialsErrorResponse)
+
+## Account [/accounts/{uuid}]
+
++ Parameters
+
+    + uuid: `7d092960-f776-0130-6960-28206654eb77` (required, string)
+
+### Get Account [GET]
+Response body contains:
+
+* The `UUID` of a account.
+* The status of an account:
+  * `ready`, `set`, `go`
+* The authentication **URI** for a account. Use this to verify passwords. (see below)
+
+::: note
+`410 Gone` means the account was terminated and the client SHOULD delete references to the **URI** and/or the **UUID** from its databases.
+:::
+
+::: note
+You can view example requests and responses by clicking **show** below.
+:::
+
++ Response 200 (application/json)
+
+    + Attributes (AccountResponse)
+
++ Response 401 (application/json)
+
+    + Attributes (ClientCredentialsErrorResponse)
+
++ Response 404 (application/json)
+
+    + Attributes (ResourceNotFoundErrorResponse)
+
++ Response 410 (application/json)
+
+    + Attributes (AccountGoneResponse)
+
+
+### Delete a account [DELETE]
+Terminates a account subscription.
+
+::: note
+You can view example requests and responses by clicking **show** below.
+:::
+
++ Response 200
+
++ Response 404 (application/json)
+
+    + Attributes(ResourceNotFoundErrorResponse)
+
++ Response 410 (application/json)
+
+    + Attributes (AccountGoneResponse)
+
+### Authentications [POST /accounts/{uuid}/authentications]
+Authenticate an account.
+
+::: note
+You can view example requests and responses by clicking **show** below.
+:::
+
++ Parameters
+
+    + uuid: `7d092960-f776-0130-6960-28206654eb77` (required, string) - The UUID
+
++ Request with body (application/json)
+
+    + Body
+
+            {
+                "password" : "123456"
+            }
+
++ Response 200 (application/json)
+
+    + Body
+
+            {
+                "authenticated" : true,
+                "error" : null,
+                "timestamp" : "1970-01-03 11:50:51 +0200"
+            }
+
++ Response 400 (application/json)
+
+    + Body
+
+            {
+                "authenticated" : false,
+                "error" : "invalid password",
+                "timestamp" : "1970-01-02 09:40:00 +0200"
+            }
+
++ Response 401 (application/json)
+
+    + Attributes (ClientCredentialsErrorResponse)
+
++ Response 404 (application/json)
+
+    + Attributes(ResourceNotFoundErrorResponse)
+
++ Response 410 (application/json)
+
+    + Attributes (AccountGoneResponse)
+
+### Authentications [GET /accounts/{uuid}/authentications]
+List the last 5 authentications of a account.
+
+::: note
+You can view example requests and responses by clicking **show** below.
+:::
+
++ Parameters
+
+    + uuid: `7d092960-f776-0130-6960-28206654eb77` (required, string) - The UUID
+
++ Response 200 (application/json)
+
+    + Body
+
+            [
+                {
+                  "authenticated" : true,
+                  "error" : null,
+                  "timestamp" : "2016-04-07 12:50:51 +0200"
+                },
+                {
+                  "authenticated" : false,
+                  "error" : "invalid password",
+                  "timestamp" : "2016-04-07 12:50:51 +0200"
+                },
+                {
+                  "authenticated" : true,
+                  "error" : null,
+                  "timestamp" : "2016-04-07 12:50:51 +0200"
+                }
+            ]
+
++ Response 401 (application/json)
+
+    + Attributes (ClientCredentialsErrorResponse)
+
++ Response 404 (application/json)
+
+    + Attributes(ResourceNotFoundErrorResponse)
+
++ Response 410 (application/json)
+
+    + Attributes (AccountGoneResponse)
